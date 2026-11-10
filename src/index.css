@@ -1,0 +1,696 @@
+:root {
+  --bg: #000;
+  --fg: #eceef3;
+  --muted: rgba(236, 238, 243, 0.62);
+  --faint: rgba(236, 238, 243, 0.36);
+  --line: rgba(255, 255, 255, 0.09);
+  --line-strong: rgba(255, 255, 255, 0.18);
+  --glass: rgba(8, 9, 14, 0.6);
+  --font: "Space Grotesk", system-ui, sans-serif;
+  --mono: "JetBrains Mono", ui-monospace, monospace;
+  --gutter: clamp(16px, 3vw, 36px);
+  --ease: cubic-bezier(0.22, 1, 0.36, 1);
+  color-scheme: dark;
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html,
+body,
+#root {
+  height: 100%;
+  margin: 0;
+}
+
+body {
+  background: var(--bg);
+  color: var(--fg);
+  font-family: var(--font);
+  -webkit-font-smoothing: antialiased;
+  overflow: hidden;
+}
+
+button {
+  font: inherit;
+  color: inherit;
+  background: none;
+  border: 0;
+  padding: 0;
+  cursor: pointer;
+}
+
+a {
+  color: inherit;
+  text-decoration: none;
+}
+
+:focus-visible {
+  outline: 1px solid var(--fg);
+  outline-offset: 3px;
+  border-radius: 6px;
+}
+
+/* ------------------------------- Camadas ------------------------------- */
+
+.layer {
+  position: fixed;
+  inset: 0;
+}
+
+.layer--galaxy {
+  z-index: 0;
+}
+
+.layer--scene {
+  z-index: 1;
+}
+
+.scene {
+  touch-action: none;
+}
+
+/* --------------------------------- HUD --------------------------------- */
+
+.hud {
+  position: fixed;
+  inset: 0;
+  z-index: 2;
+  pointer-events: none;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  padding: var(--gutter);
+}
+
+.hud > * > * {
+  pointer-events: auto;
+}
+
+/* Entrada da interface no fim da abertura: topo, dica e dock em sequência. */
+.hud__top > *,
+.hint,
+.dock {
+  animation: hud-in 0.9s var(--ease) both;
+}
+
+.hud__top .nav {
+  animation-delay: 0.12s;
+}
+
+.hint {
+  animation-delay: 0.3s;
+}
+
+.dock {
+  animation-delay: 0.2s;
+}
+
+.dock__item {
+  animation: hud-in 0.7s var(--ease) both;
+  animation-delay: calc(0.35s + var(--i, 0) * 70ms);
+}
+
+@keyframes hud-in {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+}
+
+.hud__top {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 24px;
+}
+
+.brand {
+  display: grid;
+  gap: 6px;
+  text-align: left;
+}
+
+.brand__name {
+  font-size: 20px;
+  font-weight: 500;
+  letter-spacing: -0.01em;
+}
+
+.brand__role {
+  font-family: var(--mono);
+  font-size: 11px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.brand__stack {
+  max-width: 440px;
+  font-family: var(--mono);
+  font-size: 11px;
+  line-height: 1.6;
+  color: var(--faint);
+}
+
+.brand__tech {
+  white-space: nowrap;
+}
+
+.nav {
+  display: flex;
+  gap: 4px;
+}
+
+.nav__link {
+  font-family: var(--mono);
+  font-size: 12px;
+  color: var(--muted);
+  padding: 6px 10px;
+  border-radius: 999px;
+  transition: color 0.2s, background 0.2s;
+}
+
+.nav__link:hover,
+.nav__link.is-active {
+  color: var(--fg);
+  background: rgba(255, 255, 255, 0.06);
+}
+
+.hud__bottom {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  gap: 24px;
+  transition: opacity 0.4s var(--ease), transform 0.4s var(--ease);
+}
+
+.hint {
+  margin: 0;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-family: var(--mono);
+  font-size: 11px;
+  color: var(--faint);
+}
+
+.hint__dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #ffb36b;
+  box-shadow: 0 0 10px #ffb36b;
+  animation: pulse 2.4s ease-in-out infinite;
+}
+
+@keyframes pulse {
+  50% {
+    opacity: 0.35;
+  }
+}
+
+.hint__touch {
+  display: none;
+}
+
+.hud--focused .hint {
+  opacity: 0;
+}
+
+/* Dock de projetos */
+
+.dock {
+  display: flex;
+  gap: 2px;
+  padding: 4px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: var(--glass);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+}
+
+.dock__item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 7px 12px;
+  border-radius: 999px;
+  font-family: var(--mono);
+  font-size: 11px;
+  color: var(--muted);
+  white-space: nowrap;
+  transition: color 0.2s, background 0.2s;
+}
+
+.dock__item:hover,
+.dock__item.is-hover,
+.dock__item.is-active {
+  color: var(--fg);
+  background: rgba(255, 255, 255, 0.07);
+}
+
+.dock__dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  flex: none;
+}
+
+.dock__index {
+  color: var(--faint);
+}
+
+/* Rótulo flutuante do planeta */
+
+.planet-label {
+  display: block;
+  white-space: nowrap;
+  font-family: var(--mono);
+  font-size: 11px;
+  letter-spacing: 0.04em;
+  color: var(--fg);
+  padding: 4px 9px;
+  border: 1px solid var(--line-strong);
+  border-radius: 999px;
+  background: rgba(0, 0, 0, 0.55);
+  backdrop-filter: blur(6px);
+  animation: label-in 0.25s var(--ease);
+}
+
+@keyframes label-in {
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+}
+
+/* -------------------------------- Painel -------------------------------- */
+
+.panel {
+  --accent: #ffb36b;
+  position: fixed;
+  z-index: 3;
+  top: 50%;
+  right: var(--gutter);
+  width: min(400px, calc(100vw - 2 * var(--gutter)));
+  max-height: calc(100vh - 200px);
+  overflow-y: auto;
+  padding: 26px;
+  border: 1px solid var(--line);
+  border-radius: 18px;
+  background: var(--glass);
+  backdrop-filter: blur(18px) saturate(140%);
+  -webkit-backdrop-filter: blur(18px) saturate(140%);
+  box-shadow: 0 30px 80px rgba(0, 0, 0, 0.5);
+  transform: translateY(-50%);
+  animation: panel-in 0.7s var(--ease) 0.25s both;
+}
+
+/* O painel recebe foco por código ao abrir; o contorno só aparece nos controles dentro dele. */
+.panel:focus {
+  outline: none;
+}
+
+.panel::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 26px;
+  right: 26px;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, var(--accent), transparent);
+  opacity: 0.7;
+}
+
+@keyframes panel-in {
+  from {
+    opacity: 0;
+    transform: translate(18px, -50%);
+  }
+}
+
+.panel__close {
+  position: absolute;
+  top: 18px;
+  right: 18px;
+  width: 30px;
+  height: 30px;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  color: var(--muted);
+  transition: color 0.2s, background 0.2s;
+}
+
+.panel__close:hover {
+  color: var(--fg);
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.panel__eyebrow {
+  margin: 0 0 14px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-family: var(--mono);
+  font-size: 11px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--faint);
+}
+
+.panel__dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--accent);
+  box-shadow: 0 0 10px var(--accent);
+}
+
+.panel__title {
+  margin: 0;
+  font-size: 28px;
+  font-weight: 500;
+  letter-spacing: -0.02em;
+  line-height: 1.1;
+  padding-right: 32px;
+}
+
+.panel__kind {
+  margin: 6px 0 0;
+  font-family: var(--mono);
+  font-size: 12px;
+  color: var(--muted);
+}
+
+.panel__media {
+  margin: 20px 0 0;
+  border-radius: 10px;
+  overflow: hidden;
+  border: 1px solid var(--line);
+  aspect-ratio: 16 / 10;
+  background: rgba(255, 255, 255, 0.03);
+}
+
+.panel__media img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.panel__text {
+  margin: 18px 0 0;
+  font-size: 15px;
+  line-height: 1.6;
+  color: var(--muted);
+}
+
+.facts {
+  margin: 18px 0 0;
+  display: grid;
+  grid-auto-flow: column;
+  grid-auto-columns: minmax(0, 1fr);
+  border: 1px solid var(--line);
+  border-radius: 12px;
+}
+
+.facts__item {
+  padding: 10px 12px;
+  min-width: 0;
+}
+
+.facts__item + .facts__item {
+  border-left: 1px solid var(--line);
+}
+
+.facts dt {
+  font-family: var(--mono);
+  font-size: 10px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--faint);
+}
+
+.facts dd {
+  margin: 4px 0 0;
+  font-size: 13px;
+  color: var(--fg);
+}
+
+.panel__text + .panel__text {
+  margin-top: 10px;
+}
+
+.chips {
+  list-style: none;
+  margin: 16px 0 0;
+  padding: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.chip {
+  font-family: var(--mono);
+  font-size: 11px;
+  padding: 4px 9px;
+  border: 1px solid var(--line-strong);
+  border-radius: 999px;
+  color: var(--fg);
+}
+
+.stack {
+  margin-top: 22px;
+  display: grid;
+  gap: 14px;
+}
+
+.stack__group .chips {
+  margin-top: 8px;
+}
+
+.stack__label {
+  margin: 0;
+  font-family: var(--mono);
+  font-size: 11px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--faint);
+}
+
+.panel__actions {
+  margin-top: 22px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.button {
+  font-size: 13px;
+  font-weight: 500;
+  padding: 9px 14px;
+  border: 1px solid var(--line-strong);
+  border-radius: 999px;
+  transition: background 0.2s, border-color 0.2s;
+}
+
+.button:hover {
+  background: rgba(255, 255, 255, 0.07);
+}
+
+.button--primary {
+  background: var(--fg);
+  color: #000;
+  border-color: var(--fg);
+}
+
+.button--primary:hover {
+  background: #fff;
+}
+
+.panel__pager {
+  margin-top: 24px;
+  padding-top: 16px;
+  border-top: 1px solid var(--line);
+  display: flex;
+  justify-content: space-between;
+}
+
+.panel__pager button {
+  font-family: var(--mono);
+  font-size: 11px;
+  color: var(--muted);
+  padding: 4px 0;
+  transition: color 0.2s;
+}
+
+.panel__pager button:hover {
+  color: var(--fg);
+}
+
+/* ------------------------------ Responsivo ------------------------------ */
+
+@media (max-width: 1100px) {
+  .dock__name {
+    display: none;
+  }
+  .dock__item:hover .dock__name,
+  .dock__item.is-active .dock__name {
+    display: inline;
+  }
+}
+
+/*
+ * Layout compacto: celular e tablet em pé. O painel vira uma gaveta embaixo.
+ * Precisa bater com isCompact() em scene/SolarSystem.tsx.
+ */
+@media (max-width: 767px), (max-aspect-ratio: 4/5) {
+  .hud__bottom {
+    flex-direction: column;
+    align-items: center;
+    gap: 12px;
+  }
+
+  .hint {
+    justify-content: center;
+  }
+
+  .hint__desktop {
+    display: none;
+  }
+
+  .hint__touch {
+    display: inline;
+  }
+
+  /* Dock rolável, com bordas esmaecidas indicando que há mais itens. */
+  .dock {
+    max-width: 100%;
+    overflow-x: auto;
+    scrollbar-width: none;
+    scroll-snap-type: x proximity;
+    -webkit-mask-image: linear-gradient(90deg, transparent, #000 18px, #000 calc(100% - 18px), transparent);
+    mask-image: linear-gradient(90deg, transparent, #000 18px, #000 calc(100% - 18px), transparent);
+  }
+
+  .dock::-webkit-scrollbar {
+    display: none;
+  }
+
+  .dock__item {
+    scroll-snap-align: center;
+    padding: 9px 13px;
+  }
+
+  .dock__name {
+    display: inline;
+  }
+
+  .hud--focused .hud__bottom {
+    opacity: 0;
+    pointer-events: none;
+    transform: translateY(12px);
+  }
+
+  .hud--focused .hud__bottom > * {
+    pointer-events: none;
+  }
+
+  .panel {
+    top: auto;
+    bottom: max(var(--gutter), env(safe-area-inset-bottom));
+    left: 0;
+    right: 0;
+    margin-inline: auto;
+    width: min(560px, calc(100% - 2 * var(--gutter)));
+    max-height: 52vh;
+    max-height: 52dvh;
+    padding: 22px;
+    overscroll-behavior: contain;
+    transform: none;
+    animation-name: panel-in-mobile;
+  }
+
+  @keyframes panel-in-mobile {
+    from {
+      opacity: 0;
+      transform: translateY(24px);
+    }
+  }
+
+  .panel__title {
+    font-size: 24px;
+  }
+}
+
+/* Celular: cabeçalho enxuto. */
+@media (max-width: 767px) {
+  .hud__top {
+    gap: 12px;
+  }
+
+  .nav__link {
+    padding: 6px 8px;
+  }
+
+  .nav__link:not(:first-child):not(:last-child) {
+    display: none;
+  }
+
+  .brand__name {
+    font-size: 18px;
+  }
+
+  .brand__role {
+    letter-spacing: 0.12em;
+  }
+
+  .brand__stack {
+    max-width: 62vw;
+    font-size: 10px;
+  }
+
+  .facts dd {
+    font-size: 12px;
+  }
+}
+
+/* Telas baixas (celular deitado): painel na altura toda e sem elementos secundários. */
+@media (max-height: 520px) and (min-width: 768px) {
+  .brand__stack,
+  .hint {
+    display: none;
+  }
+
+  .panel {
+    max-height: calc(100vh - 2 * var(--gutter));
+    max-height: calc(100dvh - 2 * var(--gutter));
+  }
+
+  .hud--focused .hud__bottom {
+    opacity: 0;
+    pointer-events: none;
+  }
+
+  .hud--focused .hud__bottom > * {
+    pointer-events: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .hud__top > *,
+  .hint,
+  .dock,
+  .dock__item,
+  .panel,
+  .planet-label {
+    animation-duration: 0.01ms;
+    animation-delay: 0s;
+  }
+}
