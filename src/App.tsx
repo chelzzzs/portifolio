@@ -22,6 +22,8 @@ const READY_AFTER = (INTRO_DURATION - 0.6) * 1000;
 const REVEAL_TIMEOUT = 9000;
 /** Duração do fade do overlay (ms), igual à transição em index.html. */
 const OVERLAY_FADE = 1100;
+/** Espera máxima pelo aquecimento da galáxia (ms): sem WebGL2 ela nunca avisa. */
+const PRIME_TIMEOUT = 1500;
 
 const reducedMotion = () => window.matchMedia?.("(prefers-reduced-motion: reduce)").matches ?? false;
 const introOverlay = () => document.getElementById("intro");
@@ -31,6 +33,7 @@ export function App() {
   const [hovered, setHovered] = useState<string | null>(null);
   const [phase, setPhase] = useState<Phase>(() => (reducedMotion() ? "ready" : "title"));
   const [sceneReady, setSceneReady] = useState(false);
+  const [galaxyPrimed, setGalaxyPrimed] = useState(false);
   // Se o FPS cair, o fundo de estrelas também reduz a qualidade.
   const [degraded, setDegraded] = useState(LOW_END);
 
@@ -50,9 +53,17 @@ export function App() {
     return () => window.clearTimeout(timer);
   }, [phase]);
 
-  // Revela quando a cena já está desenhando E o nome já ficou o tempo mínimo na tela.
+  // Com a cena pronta, a galáxia é montada escondida (hold) para compilar sob o overlay.
   useEffect(() => {
-    if (phase !== "title" || !sceneReady) return;
+    if (phase !== "title" || !sceneReady || galaxyPrimed) return;
+    const timer = window.setTimeout(() => setGalaxyPrimed(true), PRIME_TIMEOUT);
+    return () => window.clearTimeout(timer);
+  }, [phase, sceneReady, galaxyPrimed]);
+
+  // Revela quando a cena e a galáxia já desenharam uma vez (nenhuma compilação sobra para
+  // o meio da transição) E o nome já ficou o tempo mínimo na tela.
+  useEffect(() => {
+    if (phase !== "title" || !sceneReady || !galaxyPrimed) return;
     const wait = Math.max(0, REVEAL_AT - performance.now());
     const timer = window.setTimeout(() => {
       startIntro();
@@ -60,7 +71,7 @@ export function App() {
       setPhase("reveal");
     }, wait);
     return () => window.clearTimeout(timer);
-  }, [phase, sceneReady]);
+  }, [phase, sceneReady, galaxyPrimed]);
 
   useEffect(() => {
     if (phase !== "reveal") return;
@@ -112,8 +123,9 @@ export function App() {
   return (
     <>
       <div className="layer layer--galaxy" aria-hidden="true">
-        {/* Montado só na revelação: o warp de entrada do Galaxy vira a "chegada" ao sistema. */}
-        {phase !== "title" && (
+        {/* Montado escondido quando a cena fica pronta; o warp de entrada só começa na
+            revelação e vira a "chegada" ao sistema. */}
+        {(phase !== "title" || sceneReady) && (
           <Galaxy
             density={2.9}
             glowIntensity={0.3}
@@ -133,6 +145,8 @@ export function App() {
             repulsionStrength={1.8}
             mouseInteraction
             intro
+            hold={phase === "title"}
+            onPrimed={() => setGalaxyPrimed(true)}
             lightMode={false}
             dpr={degraded ? 1 : QUALITY.galaxyDpr}
           />
@@ -148,6 +162,7 @@ export function App() {
               onHover={setHovered}
               onSelect={select}
               onReady={() => setSceneReady(true)}
+              monitor={phase === "ready"}
               onDecline={() => setDegraded(true)}
             />
           </Suspense>

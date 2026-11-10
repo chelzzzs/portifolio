@@ -1,13 +1,14 @@
-import { useCallback, useMemo, useRef, useState, type MutableRefObject } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, type MutableRefObject } from "react";
 import { Canvas, useFrame, useThree } from "@react-three/fiber";
 import { Line, PerformanceMonitor } from "@react-three/drei";
 import { QUALITY } from "../quality";
-import { MathUtils, Vector3, type Object3D, type PerspectiveCamera } from "three";
+import { Color, MathUtils, Vector3, type Camera, type Mesh, type Object3D, type Scene, type PerspectiveCamera, type WebGLRenderTarget, type WebGLRenderer } from "three";
 import type { Line2, LineSegments2 } from "three-stdlib";
 import { projects } from "../data/portfolio";
 import { BlackHole } from "./BlackHole";
-import { Planet } from "./Planet";
-import { clamp01, damp, easeInOutCubic, intro, introProgress, sim, tickIntro } from "./sim";
+import { PlanetBaker, type BakeInput } from "./bake";
+import { KIND_INDEX, Planet } from "./Planet";
+import { TITLE_SETTLED_AT, clamp01, damp, easeInOutCubic, intro, introProgress, sim, tickIntro } from "./sim";
 
 export type Selection = { kind: "project"; id: string } | { kind: "about" } | null;
 
@@ -48,37 +49,63 @@ const COMPACT_ELEVATION = 0.95;
 type SceneProps = Props & {
   /** Chamado depois dos primeiros quadros (shaders compilados, texturas prontas). */
   onReady: () => void;
+  /** Liga o monitor de FPS. Só depois da abertura, que tem picos de trabalho esperados. */
+  monitor: boolean;
   /** Chamado quando o FPS cai e a cena reduz a qualidade. */
   onDecline: () => void;
 };
 
+/**
+ * Cede a vez ao navegador entre dois passos pesados, para a animação da abertura seguir fluida.
+ * O timeout cobre abas em segundo plano, onde requestAnimationFrame fica parado.
+ */
+const sleep = (ms: number) => new Promise<void>((resolve) => setTimeout(resolve, Math.max(0, ms)));
+
+const yieldToBrowser = () =>
+  new Promise<void>((resolve) => {
+    requestAnimationFrame(() => resolve());
+    setTimeout(resolve, 100);
+  });
+
 /** Maior intervalo de quadro considerado (s): evita saltos ao voltar de outra aba. */
 const MAX_DT = 0.1;
 
-export default function SolarSystem({ onReady, onDecline, ...props }: SceneProps) {
+export default function SolarSystem({ onReady, monitor, onDecline, ...props }: SceneProps) {
   const [dpr, setDpr] = useState<number | [number, number]>(QUALITY.sceneDpr);
+  // Nada é desenhado até todos os shaders estarem compilados: um quadro antes disso
+  // forçaria a compilação síncrona e travaria a página (e a animação do nome) por ~1 s.
+  const [warm, setWarm] = useState(false);
   return (
     <Canvas
       className="scene"
       flat
+      frameloop={warm ? "always" : "never"}
       dpr={dpr}
       gl={{ alpha: true, antialias: QUALITY.antialias, powerPreference: "high-performance" }}
       camera={{ position: [0, 42, 98], fov: 45, near: 0.1, far: 600 }}
       onPointerMissed={() => props.onSelect(null)}
     >
-      <PerformanceMonitor
-        onDecline={() => {
-          setDpr(1);
-          onDecline();
-        }}
-      />
-      <System {...props} onReady={onReady} />
+      {monitor && (
+        <PerformanceMonitor
+          onDecline={() => {
+            setDpr(1);
+            onDecline();
+          }}
+        />
+      )}
+      <System {...props} onWarm={() => setWarm(true)} onReady={onReady} />
     </Canvas>
   );
 }
 
-function System({ selection, hovered, onHover, onSelect, onReady }: Props & { onReady: () => void }) {
+type SystemProps = Props & { onWarm: () => void; onReady: () => void };
+
+function System({ selection, hovered, onHover, onSelect, onWarm, onReady }: SystemProps) {
   const size = useThree((s) => s.size);
+  const gl = useThree((s) => s.gl);
+  const scene = useThree((s) => s.scene);
+  const camera = useThree((s) => s.camera);
+  const maps = usePlanetMaps(gl);
   const compact = isCompact(size);
   const scale = compact ? 1.15 : 1;
   // No toque, a área de clique de cada planeta precisa ser bem maior que o desenho.
@@ -98,6 +125,23 @@ function System({ selection, hovered, onHover, onSelect, onReady }: Props & { on
     sim.scale = damp(sim.scale, target, 3, dt);
     sim.time += dt * sim.scale;
   });
+
+  // Com os mapas prontos e tudo montado, compila os programas da cena aos poucos
+  // (assíncrono via KHR_parallel_shader_compile) e só então libera o loop de render.
+  useEffect(() => {
+    if (!maps) return;
+    let cancelled = false;
+    compileGradually(gl, scene, camera)
+      .catch((error: unknown) => console.warn("Pré-compilação de shaders falhou:", error))
+      .then(() => {
+        if (!cancelled) onWarm();
+      });
+    return () => {
+      cancelled = true;
+    };
+    // onWarm fica fora das dependências: só alterna um estado, e a pré-compilação
+    // deve rodar uma vez por conjunto de mapas.
+  }, [maps, gl, scene, camera]);
 
   // Durante a abertura nada é selecionável: a interface ainda não existe.
   const select = (next: Selection) => {
@@ -119,7 +163,8 @@ function System({ selection, hovered, onHover, onSelect, onReady }: Props & { on
         onSelect={() => select({ kind: "about" })}
       />
 
-      {projects.map((project, index) => {
+      {maps &&
+        projects.map((project, index) => {
         const active = hovered === project.id;
         const orbit = compact ? compactOrbit(project.planet.orbit) : project.planet.orbit;
         return (
@@ -127,6 +172,7 @@ function System({ selection, hovered, onHover, onSelect, onReady }: Props & { on
             <Orbit radius={orbit} index={index} active={active} dimmed={Boolean(selection)} />
             <Planet
               project={project}
+              map={maps[index].texture}
               orbit={orbit}
               index={index}
               total={projects.length}
@@ -148,6 +194,106 @@ function System({ selection, hovered, onHover, onSelect, onReady }: Props & { on
     </>
   );
 }
+
+/**
+ * Espera a GPU terminar o que já foi enviado, sem bloquear a thread principal (fence do
+ * WebGL2 consultado a cada quadro). requestAnimationFrame sozinho não basta: ele não espera
+ * a GPU, e o trabalho acumulado na fila atrasa os quadros da página inteira.
+ */
+async function waitForGpu(gl: WebGLRenderer) {
+  const context = gl.getContext();
+  if (!(context instanceof WebGL2RenderingContext)) return;
+  const sync = context.fenceSync(context.SYNC_GPU_COMMANDS_COMPLETE, 0);
+  if (!sync) return;
+  context.flush();
+  while (context.getSyncParameter(sync, context.SYNC_STATUS) !== context.SIGNALED) {
+    await yieldToBrowser();
+  }
+  context.deleteSync(sync);
+}
+
+/**
+ * Compila os programas da cena um objeto por vez, cedendo a vez ao navegador entre eles,
+ * e faz um desenho de aquecimento.
+ * Mandar todos de uma vez ocupa a GPU por centenas de ms e congela até as animações CSS.
+ * Programas já compilados (materiais repetidos) não custam nada na segunda passada.
+ */
+async function compileGradually(gl: WebGLRenderer, scene: Scene, camera: Camera) {
+  const meshes: Object3D[] = [];
+  scene.traverseVisible((object) => {
+    if ((object as Mesh).isMesh) meshes.push(object);
+  });
+  for (const object of meshes) {
+    await yieldToBrowser();
+    await gl.compileAsync(object, camera, scene);
+  }
+  // O driver só termina de preparar cada programa no primeiro desenho de verdade, e os
+  // planetas fora do quadro (frustum culling) só seriam desenhados no meio do voo da
+  // câmera. Um desenho completo agora, ainda sob o overlay, tira esse custo da abertura.
+  const culled: Object3D[] = [];
+  scene.traverse((object) => {
+    if (object.frustumCulled) {
+      culled.push(object);
+      object.frustumCulled = false;
+    }
+  });
+  await yieldToBrowser();
+  gl.render(scene, camera);
+  culled.forEach((object) => (object.frustumCulled = true));
+  await waitForGpu(gl);
+}
+
+/**
+ * Pré-calcula as superfícies dos planetas fora do render: compila o shader de bake de forma
+ * assíncrona e desenha cada mapa em faixas, esperando a GPU entre elas, sem nenhuma tarefa
+ * longa na thread principal nem fila acumulada na GPU.
+ */
+function usePlanetMaps(gl: WebGLRenderer) {
+  const [maps, setMaps] = useState<WebGLRenderTarget[] | null>(null);
+  useEffect(() => {
+    let cancelled = false;
+    const baker = new PlanetBaker();
+    const made: WebGLRenderTarget[] = [];
+    (async () => {
+      await baker.compile(gl);
+      // O primeiro desenho com esse shader segura a GPU por algumas centenas de ms (o driver
+      // termina de gerar o executável só nessa hora, mesmo após a compilação assíncrona).
+      // A GPU parada congela também as animações CSS, então isso espera o nome terminar de
+      // se animar: com o overlay parado, a pausa não aparece.
+      if (!intro.done) await sleep(TITLE_SETTLED_AT - performance.now());
+      if (cancelled) return;
+      const width = QUALITY.planetMapSize;
+      const rows = width / 2;
+      const strip = rows / BAKE_STRIPS;
+      for (const [index, { planet }] of projects.entries()) {
+        const input = {
+          colors: [new Color(planet.colors[0]), new Color(planet.colors[1]), new Color(planet.colors[2])] as BakeInput["colors"],
+          type: KIND_INDEX[planet.type],
+          seed: index * 7.31 + 1.7,
+        };
+        const target = baker.createTarget(width);
+        made.push(target);
+        for (let y = 0; y < rows; y += strip) {
+          await yieldToBrowser();
+          if (cancelled) return;
+          baker.bakeStrip(gl, target, input, y, y + strip);
+          await waitForGpu(gl);
+        }
+      }
+      baker.dispose();
+      if (!cancelled) setMaps(made);
+    })();
+    return () => {
+      cancelled = true;
+      baker.dispose();
+      made.forEach((map) => map.dispose());
+    };
+  }, [gl]);
+  return maps;
+}
+
+/** Em quantas faixas cada mapa de planeta é desenhado. */
+const BAKE_STRIPS = 4;
 
 const ORBIT_SEGMENTS = 192;
 

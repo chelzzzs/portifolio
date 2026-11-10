@@ -1,10 +1,8 @@
 import { useEffect, useMemo, useRef } from "react";
-import { useFrame, useThree, type ThreeEvent } from "@react-three/fiber";
+import { useFrame, type ThreeEvent } from "@react-three/fiber";
 import { Html } from "@react-three/drei";
-import { BackSide, Color, DoubleSide, ShaderMaterial, type Group, type Mesh, type Object3D } from "three";
+import { BackSide, Color, DoubleSide, ShaderMaterial, type Group, type Mesh, type Object3D, type Texture } from "three";
 import type { PlanetKind, Project } from "../data/portfolio";
-import { QUALITY } from "../quality";
-import { bakePlanetMap } from "./bake";
 import { ADDITIVE, useDisposable } from "./materials";
 import {
   atmosphereFragment,
@@ -16,7 +14,7 @@ import {
 } from "./shaders";
 import { damp, easeOutBack, introProgress, sim } from "./sim";
 
-const KIND_INDEX: Record<PlanetKind, number> = { terran: 0, gas: 1, lava: 2, ice: 3, desert: 4 };
+export const KIND_INDEX: Record<PlanetKind, number> = { terran: 0, gas: 1, lava: 2, ice: 3, desert: 4 };
 
 /** Raios do anel em unidades do raio do planeta. */
 const RING_INNER = 1.45;
@@ -27,6 +25,8 @@ const ORBIT_SPEED = 0.05;
 
 type Props = {
   project: Project;
+  /** Superfície pré-calculada (ver bake.ts). Quem cria a textura é quem a descarta. */
+  map: Texture;
   index: number;
   total: number;
   /** Raio da órbita em uso (comprimido no layout compacto). */
@@ -43,7 +43,7 @@ type Props = {
   register: (id: string, object: Object3D | null) => void;
 };
 
-export function Planet({ project, index, total, orbit, scale, minHit, hovered, selected, dimmed, onHover, onSelect, register }: Props) {
+export function Planet({ project, map, index, total, orbit, scale, minHit, hovered, selected, dimmed, onHover, onSelect, register }: Props) {
   const { planet } = project;
   const size = planet.size * scale;
   const orbitRef = useRef<Group>(null);
@@ -51,27 +51,13 @@ export function Planet({ project, index, total, orbit, scale, minHit, hovered, s
   const popRef = useRef<Group>(null);
   const presence = useRef(1);
 
-  const gl = useThree((s) => s.gl);
-
-  // Superfície procedural pré-calculada uma vez numa textura (ver bake.ts).
-  const map = useMemo(
-    () =>
-      bakePlanetMap(gl, {
-        colors: [new Color(planet.colors[0]), new Color(planet.colors[1]), new Color(planet.colors[2])],
-        type: KIND_INDEX[planet.type],
-        seed: index * 7.31 + 1.7,
-        width: QUALITY.planetMapSize,
-      }),
-    [gl, planet, index],
-  );
-
   const surface = useMemo(
     () =>
       new ShaderMaterial({
         vertexShader: planetVertex,
         fragmentShader: planetFragment,
         uniforms: {
-          uMap: { value: map.texture },
+          uMap: { value: map },
           uColorC: { value: new Color(planet.colors[2]) },
           uAtmo: { value: new Color(planet.atmosphere) },
           uType: { value: KIND_INDEX[planet.type] },
@@ -122,7 +108,7 @@ export function Planet({ project, index, total, orbit, scale, minHit, hovered, s
     [planet, index],
   );
 
-  useDisposable(map, surface, atmosphere, rings);
+  useDisposable(surface, atmosphere, rings);
 
   useEffect(() => {
     register(project.id, orbitRef.current);

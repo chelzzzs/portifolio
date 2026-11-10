@@ -266,6 +266,14 @@ export interface GalaxyProps extends Omit<HTMLAttributes<HTMLDivElement>, "child
   direction?: "forward" | "backward";
   clickWarp?: boolean;
   intro?: boolean;
+  /**
+   * Monta e aquece a galáxia sem mostrá-la: compila e desenha os programas uma vez,
+   * invisível, e segura a entrada (`intro`) até virar false. Evita que a compilação
+   * aconteça no meio de uma transição visível.
+   */
+  hold?: boolean;
+  /** Chamado uma vez, durante o `hold`, quando todos os programas já foram desenhados. */
+  onPrimed?: () => void;
   backgroundColor?: string;
   opacity?: number;
   dpr?: number;
@@ -296,6 +304,8 @@ export default function Galaxy({
   direction = "forward",
   clickWarp = true,
   intro = true,
+  hold = false,
+  onPrimed,
   backgroundColor,
   opacity = 1,
   dpr,
@@ -306,6 +316,8 @@ export default function Galaxy({
   const containerRef = useRef<HTMLDivElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const wakeRef = useRef<(() => void) | null>(null);
+  const onPrimedRef = useRef(onPrimed);
+  onPrimedRef.current = onPrimed;
   const palette = Array.isArray(starColors) ? starColors.filter(Boolean).slice(0, MAX_COLORS) : [];
   const settings = {
     focal,
@@ -332,6 +344,7 @@ export default function Galaxy({
     reverse: direction === "backward",
     clickWarp,
     intro,
+    hold,
     backgroundColor,
     opacity: clamp(opacity, 0, 1),
     dpr,
@@ -422,6 +435,7 @@ export default function Galaxy({
     let raf = 0;
     let last = 0;
     let visible = true;
+    let primed = false;
 
     const render = () => {
       const s = settingsRef.current;
@@ -478,6 +492,21 @@ export default function Galaxy({
       const s = settingsRef.current;
       const dt = last ? clamp((now - last) / 1000, 0.0005, 0.05) : 1 / 60;
       last = now;
+      if (s.hold) {
+        // Aquecimento: desenha com a entrada ainda em 0 (transparente), já com o impulso
+        // inicial, para que a variante de warp também compile e passe pelo primeiro desenho.
+        state.boost = Math.max(state.boost, s.intro && !reduce ? 1.4 : 0);
+        render();
+        // Prontas = as variantes que a entrada usa (base e, com intro, a de warp).
+        const tint = s.palette.length > 0;
+        const needed = [keyOf(tint, false, false), ...(s.intro && !reduce ? [keyOf(tint, false, true)] : [])];
+        if (!primed && needed.every((key) => programs.get(key)?.done)) {
+          primed = true;
+          onPrimedRef.current?.();
+        }
+        raf = requestAnimationFrame(frame);
+        return;
+      }
       const motion = s.disableAnimation || reduce ? 0 : 1;
       if (s.intro && !reduce && state.reveal < 1) {
         state.reveal = Math.min(1, state.reveal + dt / INTRO_SECONDS);

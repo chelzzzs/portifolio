@@ -10,6 +10,13 @@ export const sim = { time: 0, scale: 1 };
  */
 export const intro = { started: false, startedAt: 0, t: 0, done: false };
 
+/**
+ * Quando as animações CSS do nome (index.html) terminam, em ms desde o início da navegação.
+ * Precisa acompanhar os atrasos e durações de `.intro__name span`, `.intro__line` e
+ * `.intro__role` (o último termina em 0,95 s + 0,8 s).
+ */
+export const TITLE_SETTLED_AT = 1800;
+
 /** Duração total da coreografia da cena, em segundos depois de `started`. */
 export const INTRO_DURATION = 3.6;
 
