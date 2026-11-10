@@ -208,6 +208,57 @@ a {
   color: var(--fg);
 }
 
+/* Popover de contato (fica num portal no <body>, acima do painel). */
+.contact__popover {
+  position: fixed;
+  z-index: 5;
+  width: min(300px, calc(100vw - 24px));
+  padding: 16px;
+  border: 1px solid var(--line-strong);
+  border-radius: 14px;
+  background: var(--glass);
+  backdrop-filter: blur(18px) saturate(140%);
+  -webkit-backdrop-filter: blur(18px) saturate(140%);
+  box-shadow: 0 24px 60px rgba(0, 0, 0, 0.5);
+  animation: popover-in 0.35s var(--ease) both;
+  transform-origin: top right;
+}
+
+@keyframes popover-in {
+  from {
+    opacity: 0;
+    transform: translateY(-6px) scale(0.97);
+  }
+}
+
+.contact__label {
+  margin: 0 0 6px;
+  font-family: var(--mono);
+  font-size: 10px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--faint);
+}
+
+.contact__email {
+  display: block;
+  font-size: 15px;
+  font-weight: 500;
+  word-break: break-all;
+  user-select: all;
+}
+
+.contact__actions {
+  display: flex;
+  gap: 8px;
+  margin-top: 14px;
+}
+
+.contact__actions .button {
+  flex: 1;
+  text-align: center;
+}
+
 .hud__bottom {
   display: flex;
   justify-content: space-between;
@@ -564,7 +615,8 @@ a {
 
 /* ------------------------------ Responsivo ------------------------------ */
 
-@media (max-width: 1100px) {
+/* Com 6 projetos, o dock com todos os nomes (~1060px) mais a dica só cabem a partir de ~1400px. */
+@media (max-width: 1400px) {
   .dock__name {
     display: none;
   }

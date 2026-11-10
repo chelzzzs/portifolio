@@ -90,7 +90,7 @@ function ProjectBody({ project, onStep }: { project: Project; onStep: (delta: nu
         <div className="panel__actions">
           {project.demo && (
             <a className="button button--primary" href={project.demo} target="_blank" rel="noreferrer">
-              {t(UI.viewProject)}
+              {t(project.demoLabel ?? UI.viewProject)}
             </a>
           )}
           {project.repo && (

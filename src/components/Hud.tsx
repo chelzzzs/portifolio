@@ -1,6 +1,7 @@
 import { useEffect, useState, type CSSProperties } from "react";
 import { profile, projects } from "../data/portfolio";
 import { LANGS, UI, useLang } from "../i18n";
+import { ContactPopover } from "./ContactPopover";
 import type { Selection } from "../scene/SolarSystem";
 
 type Props = {
@@ -58,9 +59,7 @@ export function Hud({ selection, hovered, onHover, onSelect }: Props) {
               {link.label}
             </a>
           ))}
-          <a className="nav__link" href={`mailto:${profile.email}`}>
-            {t(UI.contact)}
-          </a>
+          <ContactPopover />
 
           <div className="lang" role="group" aria-label={t(UI.language)}>
             {LANGS.map((option) => (

@@ -44,7 +44,7 @@ const isCompact = (size: Size) => size.width < MOBILE_WIDTH || isPortrait(size);
 const compactOrbit = (orbit: number) => 6.2 + (orbit - 7.5) * 0.52;
 
 /** Raio que precisa caber na largura da tela: última órbita compacta + planeta + folga. */
-const COMPACT_EXTENT = 15.6;
+const COMPACT_EXTENT = 16.3;
 /** Inclinação da câmera na visão geral compacta (rad): mais de cima que no desktop. */
 const COMPACT_ELEVATION = 0.95;
 
@@ -423,7 +423,8 @@ function CameraRig({ selection, bodies, scale }: { selection: Selection; bodies:
       return;
     }
     const fit = MathUtils.clamp(1.75 / (size.width / size.height), 1, 2.1);
-    const dist = 37 * fit;
+    // Distância da visão geral: a órbita mais externa (23,4) com a mesma folga nas bordas.
+    const dist = 38.6 * fit;
     v.pos.set(0, dist * 0.44, dist);
     v.target.set(0, -1.2, 0);
   };

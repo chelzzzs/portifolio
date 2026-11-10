@@ -1,6 +1,7 @@
 import capaApp from "../assets/capas/app-oncologista.webp";
 import capaBackoffice from "../assets/capas/backoffice.webp";
 import capaFretes from "../assets/capas/fretes.webp";
+import capaMordomo from "../assets/capas/mordomo.webp";
 import capaPetshop from "../assets/capas/petshop.webp";
 import capaSofi from "../assets/capas/sofi.webp";
 import type { Text } from "../i18n";
@@ -92,6 +93,8 @@ export type Project = {
   image?: string;
   repo?: string;
   demo?: string;
+  /** Texto do botão do demo, quando não é o projeto em si (ex.: um protótipo). */
+  demoLabel?: Text;
   planet: {
     type: PlanetKind;
     /** Cores da superfície: base, meio, detalhe. */
@@ -148,8 +151,29 @@ export const projects: Project[] = [
       colors: ["#9cc9c0", "#dcebe6", "#ffffff"],
       atmosphere: "#bfeee4",
       size: SIZE.app,
-      orbit: 12.0,
+      orbit: 11.5,
       tilt: 0.2,
+    },
+  },
+  {
+    id: "mordomo-financeiro",
+    name: "Mordomo Financeiro",
+    kind: { pt: "App web · finanças pessoais com IA", en: "Web app · AI personal finance" },
+    description: {
+      pt: "Assistente de finanças pessoais com um mordomo de IA. O usuário conta o gasto do jeito que fala (\"gastei 50 no almoço\") e o Gemini transforma em lançamento categorizado; com o relatório do mês em mãos, ele aconselha com as contas reais. Tem painel com saldo e gráficos, renda, despesas fixas com parcelas e login com JWT. Projeto da graduação na PUCPR, com protótipo navegável de 16 telas.",
+      en: "Personal finance assistant with an AI butler. Users log expenses the way they talk (\"spent 50 on lunch\") and Gemini turns them into categorized transactions; with the month's report at hand, it gives advice based on the real numbers. Dashboard with balance and charts, income, fixed expenses with installments and JWT login. A college project at PUCPR, with a 16-screen clickable prototype.",
+    },
+    tags: ["React 19", "Vite", "Recharts", "Python", "Django REST", "JWT", "Gemini API"],
+    image: capaMordomo,
+    demo: "https://chelzzzs.github.io/prototipo-mordomo/",
+    demoLabel: { pt: "Ver protótipo ↗", en: "View prototype ↗" },
+    planet: {
+      type: "gas",
+      colors: ["#141a2b", "#c79b4b", "#f2dfb0"],
+      atmosphere: "#8ea2ff",
+      size: SIZE.app,
+      orbit: 15.0,
+      tilt: 0.28,
     },
   },
   {
@@ -169,7 +193,7 @@ export const projects: Project[] = [
       colors: ["#c98a00", "#ffc531", "#fff7e8"],
       atmosphere: "#ffd36b",
       size: SIZE.landing,
-      orbit: 15.4,
+      orbit: 17.9,
       tilt: 0.2,
     },
   },
@@ -190,7 +214,7 @@ export const projects: Project[] = [
       colors: ["#16131a", "#5a5248", "#e9e2d6"],
       atmosphere: "#f0c9a0",
       size: SIZE.site,
-      orbit: 18.8,
+      orbit: 20.7,
       tilt: 0.42,
       rings: ["#e9e2d6", "#4a433c"],
     },
@@ -211,7 +235,7 @@ export const projects: Project[] = [
       colors: ["#0b1b3b", "#1d2f5c", "#f59e0b"],
       atmosphere: "#f5a524",
       size: SIZE.landing,
-      orbit: 22.2,
+      orbit: 23.4,
       tilt: 0.15,
     },
   },

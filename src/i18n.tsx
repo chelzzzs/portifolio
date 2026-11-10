@@ -84,4 +84,7 @@ export const UI = {
   next: { pt: "Próximo →", en: "Next →" },
   center: { pt: "Centro do sistema", en: "Center of the system" },
   getInTouch: { pt: "Falar comigo", en: "Get in touch" },
+  copy: { pt: "Copiar", en: "Copy" },
+  copied: { pt: "Copiado ✓", en: "Copied ✓" },
+  writeEmail: { pt: "Escrever ↗", en: "Write ↗" },
 } satisfies Record<string, Text>;
