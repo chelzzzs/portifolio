@@ -1,5 +1,6 @@
 import { useEffect, useRef } from "react";
 import { profile, projects, type Project } from "../data/portfolio";
+import { UI, useLang } from "../i18n";
 import type { Selection } from "../scene/SolarSystem";
 
 type Props = {
@@ -15,6 +16,7 @@ export function Panel({ selection, onClose, onStep }: Props) {
 
 /** Montado enquanto houver algo aberto; trocar de projeto não remonta, só troca o conteúdo. */
 function PanelView({ selection, onClose, onStep }: Props & { selection: NonNullable<Selection> }) {
+  const { t } = useLang();
   const ref = useRef<HTMLElement>(null);
   const project = selection.kind === "project" ? projects.find((p) => p.id === selection.id) : undefined;
   const key = project?.id ?? "about";
@@ -41,10 +43,10 @@ function PanelView({ selection, onClose, onStep }: Props & { selection: NonNulla
       className="panel"
       data-no-warp
       role="dialog"
-      aria-label={project ? project.name : "Sobre"}
+      aria-label={project ? t(project.name) : t(UI.about)}
       style={{ ["--accent" as string]: accent }}
     >
-      <button className="panel__close" onClick={onClose} aria-label="Fechar">
+      <button className="panel__close" onClick={onClose} aria-label={t(UI.close)}>
         <svg viewBox="0 0 16 16" width="14" height="14" aria-hidden="true">
           <path d="M3 3l10 10M13 3L3 13" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
         </svg>
@@ -55,6 +57,7 @@ function PanelView({ selection, onClose, onStep }: Props & { selection: NonNulla
 }
 
 function ProjectBody({ project, onStep }: { project: Project; onStep: (delta: number) => void }) {
+  const { t } = useLang();
   const index = projects.indexOf(project);
   const pad = (n: number) => String(n).padStart(2, "0");
 
@@ -62,23 +65,23 @@ function ProjectBody({ project, onStep }: { project: Project; onStep: (delta: nu
     <>
       <p className="panel__eyebrow">
         <span className="panel__dot" />
-        Planeta {pad(index + 1)} / {pad(projects.length)}
+        {t(UI.planet)} {pad(index + 1)} / {pad(projects.length)}
       </p>
-      <h2 className="panel__title">{project.name}</h2>
-      <p className="panel__kind">{project.kind}</p>
+      <h2 className="panel__title">{t(project.name)}</h2>
+      <p className="panel__kind">{t(project.kind)}</p>
 
       {project.image && (
         <figure className="panel__media">
-          <img src={project.image} alt={`Tela do projeto ${project.name}`} loading="lazy" />
+          <img src={project.image} alt={`${t(UI.screenshotOf)} ${t(project.name)}`} loading="lazy" />
         </figure>
       )}
 
-      <p className="panel__text">{project.description}</p>
+      <p className="panel__text">{t(project.description)}</p>
 
       <ul className="chips">
-        {project.tags.map((tag) => (
-          <li key={tag} className="chip">
-            {tag}
+        {project.tags.map((tag, i) => (
+          <li key={i} className="chip">
+            {t(tag)}
           </li>
         ))}
       </ul>
@@ -87,58 +90,59 @@ function ProjectBody({ project, onStep }: { project: Project; onStep: (delta: nu
         <div className="panel__actions">
           {project.demo && (
             <a className="button button--primary" href={project.demo} target="_blank" rel="noreferrer">
-              Ver projeto ↗
+              {t(UI.viewProject)}
             </a>
           )}
           {project.repo && (
             <a className="button" href={project.repo} target="_blank" rel="noreferrer">
-              Código ↗
+              {t(UI.code)}
             </a>
           )}
         </div>
       )}
 
       <nav className="panel__pager">
-        <button onClick={() => onStep(-1)}>← Anterior</button>
-        <button onClick={() => onStep(1)}>Próximo →</button>
+        <button onClick={() => onStep(-1)}>{t(UI.previous)}</button>
+        <button onClick={() => onStep(1)}>{t(UI.next)}</button>
       </nav>
     </>
   );
 }
 
 function AboutBody() {
+  const { t } = useLang();
   return (
     <>
       <p className="panel__eyebrow">
         <span className="panel__dot" />
-        Centro do sistema
+        {t(UI.center)}
       </p>
       <h2 className="panel__title">{profile.name}</h2>
-      <p className="panel__kind">{profile.role}</p>
+      <p className="panel__kind">{t(profile.role)}</p>
 
       <dl className="facts">
-        {profile.facts.map((fact) => (
-          <div key={fact.label} className="facts__item">
-            <dt>{fact.label}</dt>
-            <dd>{fact.value}</dd>
+        {profile.facts.map((fact, i) => (
+          <div key={i} className="facts__item">
+            <dt>{t(fact.label)}</dt>
+            <dd>{t(fact.value)}</dd>
           </div>
         ))}
       </dl>
 
-      {profile.bio.map((paragraph) => (
-        <p key={paragraph} className="panel__text">
-          {paragraph}
+      {profile.bio.map((paragraph, i) => (
+        <p key={i} className="panel__text">
+          {t(paragraph)}
         </p>
       ))}
 
       <div className="stack">
-        {profile.stack.map((group) => (
-          <div key={group.group} className="stack__group">
-            <p className="stack__label">{group.group}</p>
+        {profile.stack.map((group, i) => (
+          <div key={i} className="stack__group">
+            <p className="stack__label">{t(group.group)}</p>
             <ul className="chips">
-              {group.items.map((item) => (
-                <li key={item} className="chip">
-                  {item}
+              {group.items.map((item, j) => (
+                <li key={j} className="chip">
+                  {t(item)}
                 </li>
               ))}
             </ul>
@@ -148,7 +152,7 @@ function AboutBody() {
 
       <div className="panel__actions">
         <a className="button button--primary" href={`mailto:${profile.email}`}>
-          Falar comigo
+          {t(UI.getInTouch)}
         </a>
         {profile.links.map((link) => (
           <a key={link.href} className="button" href={link.href} target="_blank" rel="noreferrer">

@@ -4,6 +4,7 @@ import { Hud } from "./components/Hud";
 import { Panel } from "./components/Panel";
 import { SceneBoundary } from "./components/SceneBoundary";
 import { projects } from "./data/portfolio";
+import { useLang } from "./i18n";
 import { LOW_END, QUALITY } from "./quality";
 import type { Selection } from "./scene/SolarSystem";
 import { INTRO_DURATION, skipIntro, startIntro } from "./scene/sim";
@@ -29,6 +30,7 @@ const reducedMotion = () => window.matchMedia?.("(prefers-reduced-motion: reduce
 const introOverlay = () => document.getElementById("intro");
 
 export function App() {
+  const { lang } = useLang();
   const [selection, setSelection] = useState<Selection>(null);
   const [hovered, setHovered] = useState<string | null>(null);
   const [phase, setPhase] = useState<Phase>(() => (reducedMotion() ? "ready" : "title"));
@@ -157,6 +159,7 @@ export function App() {
         <SceneBoundary onError={() => setSceneReady(true)}>
           <Suspense fallback={null}>
             <SolarSystem
+              lang={lang}
               selection={selection}
               hovered={hovered}
               onHover={setHovered}

@@ -5,6 +5,7 @@ import { QUALITY } from "../quality";
 import { Color, MathUtils, Vector3, type Camera, type Mesh, type Object3D, type Scene, type PerspectiveCamera, type WebGLRenderTarget, type WebGLRenderer } from "three";
 import type { Line2, LineSegments2 } from "three-stdlib";
 import { projects } from "../data/portfolio";
+import { tr, type Lang } from "../i18n";
 import { BlackHole } from "./BlackHole";
 import { PlanetBaker, type BakeInput } from "./bake";
 import { KIND_INDEX, Planet } from "./Planet";
@@ -15,6 +16,7 @@ export type Selection = { kind: "project"; id: string } | { kind: "about" } | nu
 type Bodies = MutableRefObject<Map<string, Object3D>>;
 
 type Props = {
+  lang: Lang;
   selection: Selection;
   hovered: string | null;
   onHover: (id: string | null) => void;
@@ -100,7 +102,7 @@ export default function SolarSystem({ onReady, monitor, onDecline, ...props }: S
 
 type SystemProps = Props & { onWarm: () => void; onReady: () => void };
 
-function System({ selection, hovered, onHover, onSelect, onWarm, onReady }: SystemProps) {
+function System({ lang, selection, hovered, onHover, onSelect, onWarm, onReady }: SystemProps) {
   const size = useThree((s) => s.size);
   const gl = useThree((s) => s.gl);
   const scene = useThree((s) => s.scene);
@@ -173,6 +175,7 @@ function System({ selection, hovered, onHover, onSelect, onWarm, onReady }: Syst
             <Planet
               project={project}
               map={maps[index].texture}
+              label={tr(project.name, lang)}
               orbit={orbit}
               index={index}
               total={projects.length}

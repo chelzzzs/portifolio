@@ -1,5 +1,6 @@
 import { useEffect, useState, type CSSProperties } from "react";
 import { profile, projects } from "../data/portfolio";
+import { LANGS, UI, useLang } from "../i18n";
 import type { Selection } from "../scene/SolarSystem";
 
 type Props = {
@@ -24,20 +25,22 @@ function useMediaQuery(query: string) {
 }
 
 export function Hud({ selection, hovered, onHover, onSelect }: Props) {
+  const { lang, setLang, t } = useLang();
   const selectedId = selection?.kind === "project" ? selection.id : null;
   const dockHides = useMediaQuery(DOCK_HIDES_QUERY);
 
   return (
     <div className={`hud${selection ? " hud--focused" : ""}`}>
       <header className="hud__top">
-        <button className="brand" data-no-warp onClick={() => onSelect(null)} aria-label="Voltar à visão geral">
+        <button className="brand" data-no-warp onClick={() => onSelect(null)} aria-label={t(UI.backToOverview)}>
           <span className="brand__name">{profile.name}</span>
-          <span className="brand__role">{profile.role}</span>
+          <span className="brand__role">{t(profile.role)}</span>
           <span className="brand__stack">
             {profile.headline.map((item, i) => (
-              <span key={item}>
-                <span className="brand__tech">{item}</span>
-                {i < profile.headline.length - 1 && " · "}
+              <span key={i}>
+                <span className="brand__tech">{t(item)}</span>
+                {/* Espaço inquebrável antes do ponto: a quebra de linha nunca começa com "·". */}
+                {i < profile.headline.length - 1 && " · "}
               </span>
             ))}
           </span>
@@ -48,16 +51,30 @@ export function Hud({ selection, hovered, onHover, onSelect }: Props) {
             className={`nav__link${selection?.kind === "about" ? " is-active" : ""}`}
             onClick={() => onSelect({ kind: "about" })}
           >
-            Sobre
+            {t(UI.about)}
           </button>
           {profile.links.map((link) => (
-            <a key={link.href} className="nav__link" href={link.href} target="_blank" rel="noreferrer">
+            <a key={link.href} className="nav__link nav__link--secondary" href={link.href} target="_blank" rel="noreferrer">
               {link.label}
             </a>
           ))}
           <a className="nav__link" href={`mailto:${profile.email}`}>
-            Contato
+            {t(UI.contact)}
           </a>
+
+          <div className="lang" role="group" aria-label={t(UI.language)}>
+            {LANGS.map((option) => (
+              <button
+                key={option}
+                className={`lang__option${option === lang ? " is-active" : ""}`}
+                aria-pressed={option === lang}
+                lang={option === "pt" ? "pt-BR" : "en"}
+                onClick={() => setLang(option)}
+              >
+                {option.toUpperCase()}
+              </button>
+            ))}
+          </div>
         </nav>
       </header>
 
@@ -65,11 +82,11 @@ export function Hud({ selection, hovered, onHover, onSelect }: Props) {
       <footer className="hud__bottom" inert={Boolean(selection) && dockHides}>
         <p className="hint">
           <span className="hint__dot" />
-          <span className="hint__desktop">Clique num planeta para ver o projeto</span>
-          <span className="hint__touch">Toque num planeta</span>
+          <span className="hint__desktop">{t(UI.hintPointer)}</span>
+          <span className="hint__touch">{t(UI.hintTouch)}</span>
         </p>
 
-        <nav className="dock" aria-label="Projetos" data-no-warp>
+        <nav className="dock" aria-label={t(UI.projects)} data-no-warp>
           {projects.map((project, i) => (
             <button
               key={project.id}
@@ -83,7 +100,7 @@ export function Hud({ selection, hovered, onHover, onSelect }: Props) {
             >
               <span className="dock__dot" style={{ background: project.planet.atmosphere }} />
               <span className="dock__index">{String(i + 1).padStart(2, "0")}</span>
-              <span className="dock__name">{project.name}</span>
+              <span className="dock__name">{t(project.name)}</span>
             </button>
           ))}
         </nav>

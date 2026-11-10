@@ -118,9 +118,37 @@
       <div class="intro__inner">
         <div class="intro__name"><span style="--i: 0">M</span><span style="--i: 1">i</span><span style="--i: 2">c</span><span style="--i: 3">h</span><span style="--i: 4">e</span><span style="--i: 5">l</span><span style="--i: 6">&nbsp;</span><span style="--i: 7">Z</span><span style="--i: 8">u</span><span style="--i: 9">l</span><span style="--i: 10">s</span><span style="--i: 11">z</span><span style="--i: 12">e</span><span style="--i: 13">s</span><span style="--i: 14">k</span><span style="--i: 15">i</span></div>
         <span class="intro__line"></span>
-        <p class="intro__role">Desenvolvedor Full Stack</p>
+        <p class="intro__role" id="intro-role">Desenvolvedor Full Stack</p>
       </div>
     </div>
+    <script>
+      // Idioma decidido antes do primeiro paint, para a abertura já sair no idioma certo:
+      // ?lang=en|pt > escolha salva > idioma do navegador. A App lê o resultado em <html lang>
+      // (src/i18n.tsx usa a mesma chave "lang" no localStorage).
+      (function () {
+        var lang;
+        try {
+          var param = new URLSearchParams(location.search).get("lang");
+          if (param === "pt" || param === "en") {
+            lang = param;
+            localStorage.setItem("lang", param);
+          } else {
+            var saved = localStorage.getItem("lang");
+            if (saved === "pt" || saved === "en") lang = saved;
+          }
+        } catch (e) {}
+        if (!lang) {
+          var prefs = navigator.languages && navigator.languages.length ? navigator.languages : [navigator.language || "pt"];
+          lang = String(prefs[0]).toLowerCase().indexOf("pt") === 0 ? "pt" : "en";
+        }
+        if (lang === "en") {
+          document.documentElement.lang = "en";
+          document.title = "Michel Zulszeski · Full Stack Developer";
+          document.querySelector('meta[name="description"]').setAttribute("content", "Portfolio of Michel Zulszeski, full stack developer. Every planet in this system is a project.");
+          document.getElementById("intro-role").textContent = "Full Stack Developer";
+        }
+      })();
+    </script>
     <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>
   </body>

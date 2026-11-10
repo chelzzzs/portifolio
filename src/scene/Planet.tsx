@@ -27,6 +27,8 @@ type Props = {
   project: Project;
   /** Superfície pré-calculada (ver bake.ts). Quem cria a textura é quem a descarta. */
   map: Texture;
+  /** Nome no idioma atual, mostrado no hover. */
+  label: string;
   index: number;
   total: number;
   /** Raio da órbita em uso (comprimido no layout compacto). */
@@ -43,7 +45,7 @@ type Props = {
   register: (id: string, object: Object3D | null) => void;
 };
 
-export function Planet({ project, map, index, total, orbit, scale, minHit, hovered, selected, dimmed, onHover, onSelect, register }: Props) {
+export function Planet({ project, map, label, index, total, orbit, scale, minHit, hovered, selected, dimmed, onHover, onSelect, register }: Props) {
   const { planet } = project;
   const size = planet.size * scale;
   const orbitRef = useRef<Group>(null);
@@ -176,7 +178,7 @@ export function Planet({ project, map, index, total, orbit, scale, minHit, hover
 
       {hovered && !selected && (
         <Html center position={[0, size * (planet.rings ? 1.5 : 1) + 0.7, 0]} zIndexRange={[10, 0]} style={{ pointerEvents: "none" }}>
-          <span className="planet-label">{project.name}</span>
+          <span className="planet-label">{label}</span>
         </Html>
       )}
     </group>

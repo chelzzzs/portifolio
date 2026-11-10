@@ -162,6 +162,7 @@ a {
 
 .nav {
   display: flex;
+  align-items: center;
   gap: 4px;
 }
 
@@ -178,6 +179,33 @@ a {
 .nav__link.is-active {
   color: var(--fg);
   background: rgba(255, 255, 255, 0.06);
+}
+
+/* Seletor de idioma: PT | EN, separado dos links por uma linha fina. */
+.lang {
+  display: flex;
+  align-items: center;
+  margin-left: 8px;
+  padding-left: 10px;
+  border-left: 1px solid var(--line-strong);
+}
+
+.lang__option {
+  font-family: var(--mono);
+  font-size: 11px;
+  letter-spacing: 0.08em;
+  color: var(--faint);
+  padding: 6px 6px;
+  border-radius: 999px;
+  transition: color 0.2s;
+}
+
+.lang__option:hover {
+  color: var(--muted);
+}
+
+.lang__option.is-active {
+  color: var(--fg);
 }
 
 .hud__bottom {
@@ -639,8 +667,27 @@ a {
     padding: 6px 8px;
   }
 
-  .nav__link:not(:first-child):not(:last-child) {
+  .nav__link--secondary {
     display: none;
+  }
+
+  /* No celular o seletor desce para uma segunda linha, para não espremer o nome. */
+  .nav {
+    flex-wrap: wrap;
+    justify-content: flex-end;
+    row-gap: 0;
+  }
+
+  .lang {
+    flex-basis: 100%;
+    justify-content: flex-end;
+    margin: 0;
+    padding: 0 2px 0 0;
+    border-left: 0;
+  }
+
+  .lang__option {
+    padding: 4px 6px;
   }
 
   .brand__name {
