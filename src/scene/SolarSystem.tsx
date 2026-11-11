@@ -1,7 +1,8 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type MutableRefObject } from "react";
 import { Canvas, useFrame, useThree } from "@react-three/fiber";
 import { Line, PerformanceMonitor } from "@react-three/drei";
-import { QUALITY } from "../quality";
+import { QUALITY, budgetDpr } from "../quality";
+import { useViewport } from "../useViewport";
 import { Color, MathUtils, Vector3, type Camera, type Mesh, type Object3D, type Scene, type PerspectiveCamera, type WebGLRenderTarget, type WebGLRenderer } from "three";
 import type { Line2, LineSegments2 } from "three-stdlib";
 import { projects } from "../data/portfolio";
@@ -73,7 +74,16 @@ const yieldToBrowser = () =>
 const MAX_DT = 0.1;
 
 export default function SolarSystem({ onReady, monitor, onDecline, ...props }: SceneProps) {
-  const [dpr, setDpr] = useState<number | [number, number]>(QUALITY.sceneDpr);
+  const viewport = useViewport();
+  // Se o FPS cair durante o uso, a cena passa a renderizar no máximo a 1×.
+  const [declined, setDeclined] = useState(false);
+  // Resolução: a do aparelho, limitada pelo perfil e pelo orçamento de pixels (telas 4K).
+  const dpr = budgetDpr(
+    viewport.width,
+    viewport.height,
+    declined ? 1 : Math.min(viewport.dpr, QUALITY.sceneDpr),
+    declined ? QUALITY.scenePixels / 2 : QUALITY.scenePixels,
+  );
   // Nada é desenhado até todos os shaders estarem compilados: um quadro antes disso
   // forçaria a compilação síncrona e travaria a página (e a animação do nome) por ~1 s.
   const [warm, setWarm] = useState(false);
@@ -90,7 +100,7 @@ export default function SolarSystem({ onReady, monitor, onDecline, ...props }: S
       {monitor && (
         <PerformanceMonitor
           onDecline={() => {
-            setDpr(1);
+            setDeclined(true);
             onDecline();
           }}
         />
@@ -322,13 +332,15 @@ function Orbit({ radius, index, active, dimmed }: OrbitProps) {
     line.geometry.instanceCount = Math.ceil(drawn * ORBIT_SEGMENTS);
   });
 
+  // Espessura em pixels de tela: acompanha a escala da interface e a resolução reduzida.
+  const { ui } = useViewport();
   const opacity = dimmed ? 0.04 : active ? 0.3 : 0.11;
   return (
     <Line
       ref={ref}
       points={points}
       color="#ffffff"
-      lineWidth={active ? 1.4 : 1}
+      lineWidth={(active ? 1.4 : 1) * ui}
       transparent
       opacity={opacity}
       depthWrite={false}

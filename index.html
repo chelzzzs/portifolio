@@ -16,6 +16,15 @@
       o overlay e depois o remove.
     -->
     <style>
+      /*
+       * Escala fluida: até 1920×1080 a interface usa 16px de base; acima disso cresce junto
+       * com a tela (1440p ≈ 1,33×, 4K = 2×). Todas as medidas da interface estão em rem.
+       * O min() com vh evita exagero em telas ultrawide.
+       */
+      html {
+        font-size: clamp(16px, min(0.8333vw, 1.4815vh), 32px);
+      }
+
       html,
       body {
         margin: 0;
@@ -43,17 +52,17 @@
 
       .intro__inner {
         text-align: center;
-        padding: 0 16px;
+        padding: 0 1rem;
         transition: transform 1.4s var(--ease), filter 1.1s var(--ease);
       }
 
       .intro.is-leaving .intro__inner {
         transform: scale(1.08);
-        filter: blur(8px);
+        filter: blur(0.5rem);
       }
 
       .intro__name {
-        font-size: clamp(30px, 6vw, 64px);
+        font-size: clamp(1.875rem, 6vw, 4rem);
         font-weight: 500;
         letter-spacing: -0.03em;
         line-height: 1;
@@ -67,9 +76,9 @@
 
       .intro__line {
         display: block;
-        width: min(220px, 50vw);
+        width: min(13.75rem, 50vw);
         height: 1px;
-        margin: 22px auto 16px;
+        margin: 1.375rem auto 1rem;
         background: linear-gradient(90deg, transparent, #ffb36b, transparent);
         animation: intro-line 1s var(--ease) 0.7s both;
       }
@@ -77,18 +86,32 @@
       .intro__role {
         margin: 0;
         font-family: "JetBrains Mono", ui-monospace, monospace;
-        font-size: 11px;
+        font-size: 0.6875rem;
         letter-spacing: 0.22em;
         text-transform: uppercase;
         color: rgba(236, 238, 243, 0.62);
         animation: intro-fade 0.8s var(--ease) 0.95s both;
       }
 
+      /* Carregamento demorado (aparelho lento): a linha pulsa enquanto a cena é preparada. */
+      .intro.is-loading .intro__line {
+        animation: intro-pulse 1.4s ease-in-out infinite alternate;
+      }
+
+      @keyframes intro-pulse {
+        from {
+          opacity: 1;
+        }
+        to {
+          opacity: 0.25;
+        }
+      }
+
       @keyframes intro-letter {
         from {
           opacity: 0;
           transform: translateY(0.35em);
-          filter: blur(10px);
+          filter: blur(0.625rem);
         }
       }
 
@@ -102,7 +125,7 @@
       @keyframes intro-fade {
         from {
           opacity: 0;
-          transform: translateY(8px);
+          transform: translateY(0.5rem);
         }
       }
 

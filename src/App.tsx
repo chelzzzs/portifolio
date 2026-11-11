@@ -5,7 +5,8 @@ import { Panel } from "./components/Panel";
 import { SceneBoundary } from "./components/SceneBoundary";
 import { projects } from "./data/portfolio";
 import { useLang } from "./i18n";
-import { LOW_END, QUALITY } from "./quality";
+import { LOW_END, QUALITY, budgetDpr } from "./quality";
+import { useViewport } from "./useViewport";
 import type { Selection } from "./scene/SolarSystem";
 import { INTRO_DURATION, skipIntro, startIntro } from "./scene/sim";
 
@@ -20,7 +21,9 @@ const REVEAL_AT = 1700;
 /** Quanto depois da revelação a interface aparece: perto do fim da coreografia (ms). */
 const READY_AFTER = (INTRO_DURATION - 0.6) * 1000;
 /** Espera máxima pela cena antes de revelar mesmo assim (ms, contados da montagem da App). */
-const REVEAL_TIMEOUT = 9000;
+const REVEAL_TIMEOUT = 20000;
+/** Depois disso, se ainda estiver preparando a cena, a linha sob o nome pulsa (ms). */
+const LOADING_HINT_AT = 2600;
 /** Duração do fade do overlay (ms), igual à transição em index.html. */
 const OVERLAY_FADE = 1100;
 /** Espera máxima pelo aquecimento da galáxia (ms): sem WebGL2 ela nunca avisa. */
@@ -38,6 +41,37 @@ export function App() {
   const [galaxyPrimed, setGalaxyPrimed] = useState(false);
   // Se o FPS cair, o fundo de estrelas também reduz a qualidade.
   const [degraded, setDegraded] = useState(LOW_END);
+  const viewport = useViewport();
+  const galaxyDpr = budgetDpr(
+    viewport.width,
+    viewport.height,
+    degraded ? 1 : QUALITY.galaxyDpr,
+    degraded ? QUALITY.galaxyPixels / 2 : QUALITY.galaxyPixels,
+  );
+
+  // Pré-carrega em segundo plano, já na tela do nome, as capas dos projetos (baixadas e
+  // decodificadas), para o painel abrir sem esperar a rede. A cena, as texturas dos
+  // planetas e o fundo são preparados no mesmo período (ver SolarSystem e Galaxy).
+  useEffect(() => {
+    const images = projects.flatMap((project) => {
+      if (!project.image) return [];
+      const image = new Image();
+      image.src = project.image;
+      image.decode?.().catch(() => undefined);
+      return [image];
+    });
+    return () => images.forEach((image) => (image.src = ""));
+  }, []);
+
+  // Aparelho lento: avisa discretamente que a cena ainda está sendo preparada.
+  useEffect(() => {
+    if (phase !== "title") return;
+    const timer = window.setTimeout(
+      () => introOverlay()?.classList.add("is-loading"),
+      Math.max(0, LOADING_HINT_AT - performance.now()),
+    );
+    return () => window.clearTimeout(timer);
+  }, [phase]);
 
   // Movimento reduzido: sem abertura.
   useEffect(() => {
@@ -150,7 +184,7 @@ export function App() {
             hold={phase === "title"}
             onPrimed={() => setGalaxyPrimed(true)}
             lightMode={false}
-            dpr={degraded ? 1 : QUALITY.galaxyDpr}
+            dpr={galaxyDpr}
           />
         )}
       </div>
@@ -172,7 +206,8 @@ export function App() {
         </SceneBoundary>
       </div>
 
-      {phase === "ready" && <Hud selection={selection} hovered={hovered} onHover={setHovered} onSelect={select} />}
+      {/* Montado desde o início, invisível e pausado até a abertura terminar (pré-carregamento). */}
+      <Hud waiting={phase !== "ready"} selection={selection} hovered={hovered} onHover={setHovered} onSelect={select} />
       <Panel selection={selection} onClose={() => select(null)} onStep={step} />
     </>
   );

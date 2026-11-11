@@ -5,6 +5,8 @@ import { ContactPopover } from "./ContactPopover";
 import type { Selection } from "../scene/SolarSystem";
 
 type Props = {
+  /** Abertura em andamento: o HUD fica montado, mas invisível, inerte e com as animações pausadas. */
+  waiting: boolean;
   selection: Selection;
   hovered: string | null;
   onHover: (id: string | null) => void;
@@ -25,13 +27,13 @@ function useMediaQuery(query: string) {
   return matches;
 }
 
-export function Hud({ selection, hovered, onHover, onSelect }: Props) {
+export function Hud({ waiting, selection, hovered, onHover, onSelect }: Props) {
   const { lang, setLang, t } = useLang();
   const selectedId = selection?.kind === "project" ? selection.id : null;
   const dockHides = useMediaQuery(DOCK_HIDES_QUERY);
 
   return (
-    <div className={`hud${selection ? " hud--focused" : ""}`}>
+    <div className={`hud${selection ? " hud--focused" : ""}${waiting ? " hud--waiting" : ""}`} inert={waiting}>
       <header className="hud__top">
         <button className="brand" data-no-warp onClick={() => onSelect(null)} aria-label={t(UI.backToOverview)}>
           <span className="brand__name">{profile.name}</span>

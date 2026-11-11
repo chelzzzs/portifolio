@@ -72,7 +72,7 @@ function ProjectBody({ project, onStep }: { project: Project; onStep: (delta: nu
 
       {project.image && (
         <figure className="panel__media">
-          <img src={project.image} alt={`${t(UI.screenshotOf)} ${t(project.name)}`} loading="lazy" />
+          <img src={project.image} alt={`${t(UI.screenshotOf)} ${t(project.name)}`} decoding="async" />
         </figure>
       )}
 
